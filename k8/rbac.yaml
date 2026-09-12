@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: analytics-sa
+  namespace: default
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: wif-token-reviewer
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: wif-token-reviewer-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+- kind: ServiceAccount
+  name: wif-token-reviewer
+  namespace: default
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: wif-token-reviewer-token
+  namespace: default
+  annotations:
+    kubernetes.io/service-account.name: wif-token-reviewer
+type: kubernetes.io/service-account-token

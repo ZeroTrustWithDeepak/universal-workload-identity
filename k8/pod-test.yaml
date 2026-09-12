@@ -1,0 +1,125 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: secured-k8s-workload
+  namespace: default
+spec:
+  serviceAccountName: analytics-sa
+  volumes:
+  - name: bin-volume
+    emptyDir: {}
+  - name: google-creds
+    emptyDir: {}
+
+  initContainers:
+  - name: setup-wif
+    image: curlimages/curl:latest
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+    - name: bin-volume
+      mountPath: /opt/bin
+    - name: google-creds
+      mountPath: /etc/google
+    env:
+    - name: HOST_BRIDGE_IP
+      valueFrom:
+        configMapKeyRef:
+          name: wif-config
+          key: HOST_BRIDGE_IP
+    - name: MINIO_PORT
+      valueFrom:
+        configMapKeyRef:
+          name: wif-config
+          key: MINIO_PORT
+    - name: BINARY_VERSION
+      valueFrom:
+        configMapKeyRef:
+          name: wif-config
+          key: BINARY_VERSION
+    - name: PROJECT_NUMBER
+      valueFrom:
+        configMapKeyRef:
+          name: wif-config
+          key: PROJECT_NUMBER
+    - name: POOL_ID
+      valueFrom:
+        configMapKeyRef:
+          name: wif-config
+          key: POOL_ID
+    - name: PROVIDER_ID
+      valueFrom:
+        configMapKeyRef:
+          name: wif-config
+          key: PROVIDER_ID
+    - name: GSA_EMAIL
+      valueFrom:
+        configMapKeyRef:
+          name: wif-config
+          key: GSA_EMAIL
+    command: ["/bin/sh", "-c"]
+    args:
+      - |
+        set -euo pipefail
+        mkdir -p /opt/bin /etc/google
+
+        echo "=== Downloading universal-wif client from MinIO ==="
+        curl -fSL -o /opt/bin/universal-wif "http://${HOST_BRIDGE_IP}:${MINIO_PORT}/wif-binary/${BINARY_VERSION}/universal-wif"
+        chmod +x /opt/bin/universal-wif
+
+        echo "=== Generating Google ADC configuration ==="
+        /opt/bin/universal-wif init \
+          --project-number "${PROJECT_NUMBER}" \
+          --pool-id "${POOL_ID}" \
+          --provider-id "${PROVIDER_ID}" \
+          --service-account "${GSA_EMAIL}" \
+          --binary-path "/opt/bin/universal-wif" \
+          --out "/etc/google/credentials.json"
+
+        echo "Init complete!"
+
+  containers:
+  - name: workload
+    image: google/cloud-sdk:slim
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+    - name: bin-volume
+      mountPath: /opt/bin
+    - name: google-creds
+      mountPath: /etc/google
+    env:
+    - name: HOST_BRIDGE_IP
+      valueFrom:
+        configMapKeyRef:
+          name: wif-config
+          key: HOST_BRIDGE_IP
+    - name: WIF_SERVER_PORT
+      valueFrom:
+        configMapKeyRef:
+          name: wif-config
+          key: WIF_SERVER_PORT
+    - name: WIF_SERVER_URL
+      value: "http://$(HOST_BRIDGE_IP):$(WIF_SERVER_PORT)"
+    - name: AGENT_SHARED_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: wif-secret
+          key: AGENT_SHARED_SECRET
+    - name: GOOGLE_APPLICATION_CREDENTIALS
+      value: "/etc/google/credentials.json"
+    - name: CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE
+      value: "/etc/google/credentials.json"
+    - name: GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES
+      value: "1"
+    command: ["/bin/bash", "-c"]
+    args:
+      - |
+        export PATH="/opt/bin:$PATH"
+
+        echo "=== Verifying In-Pod Token Generation ==="
+        /opt/bin/universal-wif get-token
+
+        echo "=== Executing Keyless GCP API Call ==="
+        gcloud projects list
+
+        echo "=== Success. Keeping pod alive for inspection ==="
+        sleep 3600

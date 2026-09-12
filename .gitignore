@@ -1,0 +1,20 @@
+# Local environment and secret files
+.env
+*.env.local
+credentials.json
+
+# Keys and certificates
+*.pem
+*.key
+*.crt
+
+# Compiled binaries
+universal-wif
+universal-wif-server
+universal-wif-downloaded
+bin/
+wif-config-demo.yaml
+# OS and editor files
+.DS_Store
+.idea/
+.vscode/
