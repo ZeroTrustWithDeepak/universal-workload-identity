@@ -1,0 +1,11 @@
+# Default to LF line endings for all text files
+* text eol=lf
+
+# Explicitly ensure sensitive config and scripts always stay LF
+*.env* text eol=lf
+*.sh text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+go.mod text eol=lf
+go.sum text eol=lf

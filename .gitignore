@@ -9,9 +9,9 @@ credentials.json
 *.crt
 
 # Compiled binaries
-universal-wif
-universal-wif-server
-universal-wif-downloaded
+/universal-wif
+/universal-wif-server
+/universal-wif-downloaded
 bin/
 wif-config-demo.yaml
 # OS and editor files

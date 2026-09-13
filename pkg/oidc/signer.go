@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"time"
@@ -59,6 +60,7 @@ func NewSigner(issuerURL, keyID string) (*Signer, error) {
 
 	// Check if a persistent key path or inline PEM is provided
 	if keyPath := os.Getenv("WIF_PRIVATE_KEY_PATH"); keyPath != "" {
+		log.Printf("[OIDC] Loading persistent RSA signing key from file: %s", keyPath)
 		keyData, readErr := os.ReadFile(keyPath)
 		if readErr != nil {
 			return nil, fmt.Errorf("failed to read private key from %s: %w", keyPath, readErr)
@@ -68,6 +70,7 @@ func NewSigner(issuerURL, keyID string) (*Signer, error) {
 			return nil, fmt.Errorf("invalid private key in %s: %w", keyPath, err)
 		}
 	} else if keyPEM := os.Getenv("WIF_PRIVATE_KEY_PEM"); keyPEM != "" {
+		log.Println("[OIDC] Loading persistent RSA signing key from WIF_PRIVATE_KEY_PEM environment variable")
 		key, err = loadPrivateKeyFromPEM([]byte(keyPEM))
 		if err != nil {
 			return nil, fmt.Errorf("invalid inline private key PEM: %w", err)
@@ -75,6 +78,7 @@ func NewSigner(issuerURL, keyID string) (*Signer, error) {
 	} else {
 		// Fall back to ephemeral generated key
 		bits := getEnvInt("WIF_RSA_KEY_BITS", 2048)
+		log.Printf("[OIDC] WARNING: WIF_PRIVATE_KEY_PATH not set. Generating %d-bit in-memory ephemeral key (dev only)", bits)
 		key, err = rsa.GenerateKey(rand.Reader, bits)
 		if err != nil {
 			return nil, fmt.Errorf("failed generating RSA key: %w", err)
