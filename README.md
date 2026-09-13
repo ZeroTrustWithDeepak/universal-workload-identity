@@ -160,10 +160,10 @@ Populate the `.env` file with your settings:
 
 ```bash
 PORT=8080
-WIF_ISSUER_URL=[https://wif.yourdomain.com](https://wif.yourdomain.com)
+WIF_ISSUER_URL=https://wif.yourdomain.com
 WIF_KEY_ID=wif-key-v1
 AGENT_SHARED_SECRET=your-secure-shared-secret
-KUBERNETES_API_URL=[https://kubernetes.default.svc](https://kubernetes.default.svc)
+KUBERNETES_API_URL=https://kubernetes.default.svc
 K8S_SERVER_REVIEWER_TOKEN=your-token-if-running-outside-cluster
 
 ```
@@ -191,8 +191,8 @@ go run ./cmd/universal-wif-server/main.go
 Confirm the server is up and serving discovery metadata:
 
 ```bash
-curl -s [http://127.0.0.1:8080/.well-known/openid-configuration](http://127.0.0.1:8080/.well-known/openid-configuration) | jq .
-curl -s [http://127.0.0.1:8080/.well-known/jwks.json](http://127.0.0.1:8080/.well-known/jwks.json) | jq .
+curl -s http://127.0.0.1:8080/.well-known/openid-configuration | jq .
+curl -s http://127.0.0.1:8080/.well-known/jwks.json | jq .
 
 ```
 
@@ -258,7 +258,7 @@ gcloud iam workload-identity-pools providers create-oidc "${PROVIDER_ID}" \
     --location="global" \
     --workload-identity-pool="${POOL_ID}" \
     --issuer-uri="${ISSUER_URL}" \
-    --allowed-audiences="//[iam.googleapis.com/projects/$](https://iam.googleapis.com/projects/$){PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL_ID}/providers/${PROVIDER_ID}" \
+    --allowed-audiences="https://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL_ID}/providers/${PROVIDER_ID}" \
     --attribute-mapping="google.subject=assertion.sub,attribute.platform=assertion.platform,attribute.namespace=assertion.namespace,attribute.k8s_sa_uid=assertion.k8s_sa_uid,attribute.hostname=assertion.hostname,attribute.job=assertion.job_name" \
     --attribute-condition="assertion.platform in ['k8s', 'vm', 'jenkins', 'standalone']"
 
@@ -308,7 +308,7 @@ export K8S_SA_UID="<YOUR-K8S-SA-UID>"
 gcloud iam service-accounts add-iam-policy-binding "${GSA_EMAIL}" \
     --project="${PROJECT_ID}" \
     --role="roles/iam.workloadIdentityUser" \
-    --member="principalSet://[iam.googleapis.com/projects/$](https://iam.googleapis.com/projects/$){PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL_ID}/attribute.k8s_sa_uid/${K8S_SA_UID}"
+    --member="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL_ID}/attribute.k8s_sa_uid/${K8S_SA_UID}"
 
 ```
 
@@ -316,13 +316,13 @@ gcloud iam service-accounts add-iam-policy-binding "${GSA_EMAIL}" \
 
 ```bash
 # For Kubernetes:
---member="principal://[iam.googleapis.com/projects/$](https://iam.googleapis.com/projects/$){PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL_ID}/subject/k8s:ns:default:sa:analytics-sa"
+--member="principal://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL_ID}/subject/k8s:ns:default:sa:analytics-sa"
 
 # For Jenkins:
---member="principal://[iam.googleapis.com/projects/$](https://iam.googleapis.com/projects/$){PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL_ID}/subject/jenkins:job:production-deploy"
+--member="principal://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL_ID}/subject/jenkins:job:production-deploy"
 
 # For Bare-Metal / VM:
---member="principal://[iam.googleapis.com/projects/$](https://iam.googleapis.com/projects/$){PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL_ID}/subject/vm:hostname:db-backup-host-01"
+--member="principal://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL_ID}/subject/vm:onprem:dc:onprem-dc1:tier:backend:node:srv-01""
 
 ```
 
